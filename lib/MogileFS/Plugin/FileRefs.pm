@@ -58,7 +58,7 @@ sub load {
         }
         eval { $dbh->do("UNLOCK TABLES"); };
 
-        $query->ok_line({files_outstanding => 0, updated => $updated});
+        return $query->ok_line({files_outstanding => 0, updated => $updated});
     }) or die;
 }
 
