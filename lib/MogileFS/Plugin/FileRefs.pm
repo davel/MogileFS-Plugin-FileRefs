@@ -6,60 +6,66 @@ use warnings;
 our $VERSION = '0.01';
 
 sub load {
-    MogileFS::register_worker_command('add_file_ref', sub {
-        my ($query, $dmid, $dkey, $ref) = @_;
-        my $dbh = Mgd::get_dbh();
-        local $@;
-        my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $dkey, $ref); };
-        if ($@ || $dbh->err) {
-            return $query->err_line("add_file_ref_fail");
-        }
+    MogileFS::register_worker_command('add_file_ref', \&add_file_ref) or die;
 
-        return $query->ok_line({made_new_ref => $updated});
-    }) or die;
+    MogileFS::register_worker_command('del_file_ref', \&del_file_ref) or die;
 
-    MogileFS::register_worker_command('del_file_ref', sub {
-        my ($query, $dmid, $dkey, $ref) = @_;
-        my $dbh = Mgd::get_dbh();
-        local $@;
-        my $deleted = eval { $dbh->do("DELETE file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $dkey, $ref) };
-        if ($@ || $dbh->err) {
-            return $query->err_line("del_file_ref_fail");
-        }
-        return $query->ok_line({deleted_ref => $deleted });
-    }) or die;
+    MogileFS::register_worker_command('rename_if_no_refs', \&rename_if_no_refs) or die;
+}
 
-    MogileFS::register_worker_command('rename_if_no_refs', sub {
-        my ($query, $dmid, $dkey, $new_dkey) = @_;
-        my $dbh = Mgd::get_dbh();
+sub add_file_ref {
+    my ($query, $dmid, $dkey, $ref) = @_;
+    my $dbh = Mgd::get_dbh();
+    local $@;
+    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $dkey, $ref); };
+    if ($@ || $dbh->err) {
+        return $query->err_line("add_file_ref_fail");
+    }
 
-        local $@;
-        eval { $dbh->do("LOCK TABLES file_ref WRITE"); };
-        if ($@ || $dbh->err) {
-            eval { $dbh->do("UNLOCK TABLES"); };
-            return $query->err_line("rename_if_no_refs_failed");
-        }
+    return $query->ok_line({made_new_ref => $updated});
+}
 
-        my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey) };
-        if ($@ || $dbh->err) {
-            eval { $dbh->do("UNLOCK TABLES"); };
-            return $query->err_line("rename_if_no_refs_failed");
-        }
+sub del_file_ref {
+    my ($query, $dmid, $dkey, $ref) = @_;
+    my $dbh = Mgd::get_dbh();
+    local $@;
+    my $deleted = eval { $dbh->do("DELETE file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $dkey, $ref) };
+    if ($@ || $dbh->err) {
+        return $query->err_line("del_file_ref_fail");
+    }
+    return $query->ok_line({deleted_ref => $deleted });
+}
 
-        if ($count != 0) {
-            eval { $dbh->do("UNLOCK TABLES"); };
-            return $query->ok_line({files_outstanding => $count});
-        }
+sub rename_if_no_refs {
+    my ($query, $dmid, $dkey, $new_dkey) = @_;
+    my $dbh = Mgd::get_dbh();
 
-        my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $new_dkey, $dmid, $dkey); };
-        if ($@ || $dbh->err) {
-            eval { $dbh->do("UNLOCK TABLES"); };
-            return $query->err_line("rename_if_no_refs_failed");
-        }
+    local $@;
+    eval { $dbh->do("LOCK TABLES file_ref WRITE"); };
+    if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
+        return $query->err_line("rename_if_no_refs_failed");
+    }
 
-        return $query->ok_line({files_outstanding => 0, updated => $updated});
-    }) or die;
+    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey) };
+    if ($@ || $dbh->err) {
+        eval { $dbh->do("UNLOCK TABLES"); };
+        return $query->err_line("rename_if_no_refs_failed");
+    }
+
+    if ($count != 0) {
+        eval { $dbh->do("UNLOCK TABLES"); };
+        return $query->ok_line({files_outstanding => $count});
+    }
+
+    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $new_dkey, $dmid, $dkey); };
+    if ($@ || $dbh->err) {
+        eval { $dbh->do("UNLOCK TABLES"); };
+        return $query->err_line("rename_if_no_refs_failed");
+    }
+    eval { $dbh->do("UNLOCK TABLES"); };
+
+    return $query->ok_line({files_outstanding => 0, updated => $updated});
 }
 
 1;
