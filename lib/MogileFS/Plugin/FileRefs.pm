@@ -20,10 +20,10 @@ sub load {
 }
 
 sub add_file_ref {
-    my ($query, $dmid, $dkey, $ref) = @_;
+    my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     local $@;
-    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $dkey, $ref); };
+    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $args->{dmid}, $args->{dkey}, $args->{'ref'}); };
     if ($@ || $dbh->err || $updated < 1) {
         return $query->err_line("add_file_ref_fail");
     }
@@ -32,10 +32,10 @@ sub add_file_ref {
 }
 
 sub del_file_ref {
-    my ($query, $dmid, $dkey, $ref) = @_;
+    my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     local $@;
-    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $dkey, $ref) };
+    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $args->{dmid}, $args->{dkey}, $args->{'ref'}) };
     if ($@ || $dbh->err) {
         warn $@;
         return $query->err_line("del_file_ref_fail");
@@ -44,7 +44,7 @@ sub del_file_ref {
 }
 
 sub rename_if_no_refs {
-    my ($query, $dmid, $dkey, $new_dkey) = @_;
+    my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
 
     local $@;
@@ -55,7 +55,7 @@ sub rename_if_no_refs {
         return $query->err_line("rename_if_no_refs_failed");
     }
 
-    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey) };
+    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $args->{dmid}, $args->{from_key}) };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
         warn $@;
@@ -67,7 +67,7 @@ sub rename_if_no_refs {
         return $query->ok_line({files_outstanding => $count});
     }
 
-    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $new_dkey, $dmid, $dkey); };
+    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{to_key}, $args->{dmid}, $args->{from_key}); };
     if ($@ || $dbh->err) {
         warn $@;
         eval { $dbh->do("UNLOCK TABLES"); };
@@ -79,10 +79,10 @@ sub rename_if_no_refs {
 }
 
 sub list_refs_for_dkey {
-    my ($query, $dmid, $dkey) = @_;
+    my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     my $result = eval {
-        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey);
+        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $args->{dmid}, $args->{dkey});
     };
     if ($@ || $dbh->err) {
         return $query->err_line("list_refs_for_dkey_failed");
