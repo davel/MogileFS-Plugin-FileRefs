@@ -46,15 +46,17 @@ sub rename_if_no_refs {
     my $dbh = Mgd::get_dbh();
 
     local $@;
-    eval { $dbh->do("LOCK TABLES file_ref WRITE"); };
+    eval { $dbh->do("LOCK TABLES file_ref WRITE, file WRITE"); };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
+        warn $@;
         return $query->err_line("rename_if_no_refs_failed");
     }
 
     my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey) };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
+        warn $@;
         return $query->err_line("rename_if_no_refs_failed");
     }
 
@@ -65,12 +67,13 @@ sub rename_if_no_refs {
 
     my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $new_dkey, $dmid, $dkey); };
     if ($@ || $dbh->err) {
+        warn $@;
         eval { $dbh->do("UNLOCK TABLES"); };
         return $query->err_line("rename_if_no_refs_failed");
     }
     eval { $dbh->do("UNLOCK TABLES"); };
 
-    return $query->ok_line({files_outstanding => 0, updated => $updated});
+    return $query->ok_line({files_outstanding => 0, updated => $updated+0});
 }
 
 sub update_schema {
