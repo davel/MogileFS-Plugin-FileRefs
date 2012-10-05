@@ -7,7 +7,7 @@ use MogileFS::Store;
 
 
 our $VERSION = '0.02';
-MogileFS::Store::add_extra_tables("file_ref");
+MogileFS::Store->add_extra_tables("file_ref");
 
 sub load {
     MogileFS::register_worker_command('add_file_ref', \&add_file_ref) or die;
@@ -23,21 +23,22 @@ sub add_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     local $@;
-    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $args->{dmid}, $args->{dkey}, $args->{'ref'}); };
+    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $args->{key}, $args->{'ref'}); };
     if ($@ || $dbh->err || $updated < 1) {
+        warn $@;
         return $query->err_line("add_file_ref_fail");
     }
-
     return $query->ok_line({made_new_ref => $updated>1 ? 1:0});
 }
 
 sub del_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
+    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     local $@;
-    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $args->{dmid}, $args->{dkey}, $args->{'ref'}) };
+    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{key}, $args->{'ref'}) };
     if ($@ || $dbh->err) {
-        warn $@;
         return $query->err_line("del_file_ref_fail");
     }
     return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
@@ -47,18 +48,17 @@ sub rename_if_no_refs {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
 
+    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     local $@;
     eval { $dbh->do("LOCK TABLES file_ref WRITE, file WRITE"); };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
-        warn $@;
         return $query->err_line("rename_if_no_refs_failed");
     }
 
-    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $args->{dmid}, $args->{from_key}) };
+    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{from_key}) };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
-        warn $@;
         return $query->err_line("rename_if_no_refs_failed");
     }
 
@@ -67,9 +67,8 @@ sub rename_if_no_refs {
         return $query->ok_line({files_outstanding => $count});
     }
 
-    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{to_key}, $args->{dmid}, $args->{from_key}); };
+    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{to_key}, $dmid, $args->{from_key}); };
     if ($@ || $dbh->err) {
-        warn $@;
         eval { $dbh->do("UNLOCK TABLES"); };
         return $query->err_line("rename_if_no_refs_failed");
     }
@@ -80,9 +79,10 @@ sub rename_if_no_refs {
 
 sub list_refs_for_dkey {
     my ($query, $args) = @_;
+    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     my $dbh = Mgd::get_dbh();
     my $result = eval {
-        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $args->{dmid}, $args->{dkey});
+        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{key});
     };
     if ($@ || $dbh->err) {
         return $query->err_line("list_refs_for_dkey_failed");

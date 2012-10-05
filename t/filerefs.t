@@ -33,65 +33,79 @@ use strict;
 
 note "Testing add refs";
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => undef, dkey => "zz", ref => "00001"}), "0");
-is($sent_to_parent, "ERR add_file_ref_fail add_file_ref_fail");
+my $domfac = MogileFS::Factory::Domain->get_factory;
+ok($domfac, "got a domain factory");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
+{
+# Add in a test domain.
+    my $dom = $domfac->set({ dmid => 1, namespace => 'eee'});
+    ok($dom, "made a new domain object");
+    is($dom->id, 1, "domain id is 1");
+    is($dom->name, 'eee', 'domain namespace is toast');
+}
+
+is($store->create_domain("eee"), 1);
+
+
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", dkey => "zz", ref => "00001"}), "0");
+is($sent_to_parent, "ERR domain_not_found Domain+not+found");
+
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
 is($sent_to_parent, "OK made_new_ref=0");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
 is($sent_to_parent, "OK made_new_ref=1");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
 is($sent_to_parent, "OK made_new_ref=1");
 
 note "Testing del refs";
 
-is(MogileFS::Plugin::FileRefs::del_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::del_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
 is($sent_to_parent, "OK deleted_ref=1");
 
-is(MogileFS::Plugin::FileRefs::del_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::del_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
 is($sent_to_parent, "OK deleted_ref=0");
 
 note "Testing rename";
 
-is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {dmid => 1, from_key => "zz", to_key => "yy"}), "1");
+is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", from_key => "zz", to_key => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=0&updated=0");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
-is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {dmid => 1, from_key => "zz", to_key => "yy"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", from_key => "zz", to_key => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=1");
 
 $store->replace_into_file( dmid => 1, key => "zz", fidid => 1, classid => 1, devcount => 0 );
-is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {dmid => 1, from_key => "zz", to_key => "yy"}), "1");
+is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", from_key => "zz", to_key => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=1");
 
-is(MogileFS::Plugin::FileRefs::del_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
-is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {dmid => 1, from_key => "zz", to_key => "yy"}), "1");
+is(MogileFS::Plugin::FileRefs::del_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", from_key => "zz", to_key => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=0&updated=1");
 
-is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {dmid => 1, from_key => "zz", to_key => "yy"}), "1");
+is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", from_key => "zz", to_key => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=0&updated=0");
 
-note "Testing list_refs_for_dkey";
+note "Testing list_refs_for_key";
 
-is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {dmid => 1, dkey => "zz"}), "1");
+is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", key => "zz"}), "1");
 is($sent_to_parent, "OK total=0");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
-is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {dmid => 1, dkey => "zz"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", key => "zz"}), "1");
 is($sent_to_parent, "OK total=1&ref_0=00001");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00001"}), "1");
-is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {dmid => 1, dkey => "zz"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00001"}), "1");
+is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", key => "zz"}), "1");
 is($sent_to_parent, "OK total=1&ref_0=00001");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "zz", ref => "00002"}), "1");
-is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {dmid => 1, dkey => "zz"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "zz", ref => "00002"}), "1");
+is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", key => "zz"}), "1");
 is($sent_to_parent, "OK ref_1=00002&total=2&ref_0=00001");
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {dmid => 1, dkey => "yy", ref => "00003"}), "1");
-is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {dmid => 1, dkey => "zz"}), "1");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", key => "yy", ref => "00003"}), "1");
+is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", key => "zz"}), "1");
 is($sent_to_parent, "OK ref_1=00002&total=2&ref_0=00001");
 
 
