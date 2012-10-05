@@ -2,7 +2,7 @@ Source: libmogilefs-plugin-filerefs-perl
 Section: perl
 Priority: optional
 Build-Depends: debhelper (>= 7)
-Build-Depends-Indep: perl, libmogilefs-server-perl
+Build-Depends-Indep: perl, libmogilefs-server-perl, libtest-exception-perl
 Maintainer: Dave Lambley <davel@state51.co.uk>
 Standards-Version: 3.8.3
 Homepage: http://search.cpan.org/dist/MogileFS-Plugin-FileRefs/
