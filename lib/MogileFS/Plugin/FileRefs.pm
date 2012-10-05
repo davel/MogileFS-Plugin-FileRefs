@@ -15,6 +15,8 @@ sub load {
     MogileFS::register_worker_command('del_file_ref', \&del_file_ref) or die;
 
     MogileFS::register_worker_command('rename_if_no_refs', \&rename_if_no_refs) or die;
+
+    MogileFS::register_worker_command('list_refs_for_dkey', \&list_refs_for_dkey) or die;
 }
 
 sub add_file_ref {
@@ -74,6 +76,23 @@ sub rename_if_no_refs {
     eval { $dbh->do("UNLOCK TABLES"); };
 
     return $query->ok_line({files_outstanding => 0, updated => $updated+0});
+}
+
+sub list_refs_for_dkey {
+    my ($query, $dmid, $dkey) = @_;
+    my $dbh = Mgd::get_dbh();
+    my $result = eval {
+        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $dkey);
+    };
+    if ($@ || $dbh->err) {
+        return $query->err_line("list_refs_for_dkey_failed");
+    }
+    my $i;
+    return $query->ok_line({
+        total => scalar(@$result),
+        map { "ref_".$i++ => $_ } @{ $result }
+    });
+
 }
 
 sub update_schema {
