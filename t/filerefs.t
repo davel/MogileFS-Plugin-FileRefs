@@ -17,7 +17,7 @@ if (!$sto) {
 my $store = Mgd::get_store;
 isa_ok($store, 'MogileFS::Store');
 
-lives_ok { MogileFS::Plugin::FileRefs::update_schema() };
+lives_ok { $store->create_table("file_ref") };
 
 open(my $null, "+>", "/dev/null") or die $!;
 my $query = MogileFS::Worker::Query->new($null);

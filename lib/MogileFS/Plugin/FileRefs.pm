@@ -3,7 +3,11 @@ package MogileFS::Plugin::FileRefs;
 use strict;
 use warnings;
 
+use MogileFS::Store;
+
+
 our $VERSION = '0.01';
+MogileFS::Store::add_extra_tables("file_ref");
 
 sub load {
     MogileFS::register_worker_command('add_file_ref', \&add_file_ref) or die;
@@ -78,14 +82,18 @@ sub update_schema {
     return;
 }
 
-sub TABLE_fileref {
-    q{CREATE TABLE `file_ref` (
-  `dmid` SMALLINT UNSIGNED NOT NULL,
-  `dkey` varchar(255) DEFAULT NULL,
-  `ref`  varchar(255) DEFAULT NULL,
-  UNIQUE KEY `i_unique` (`dmid`,`dkey`,`ref`)
-);
-    };
+{
+    package MogileFS::Store;
+
+    sub TABLE_file_ref {
+        q{CREATE TABLE `file_ref` (
+      `dmid` SMALLINT UNSIGNED NOT NULL,
+      `dkey` varchar(255) DEFAULT NULL,
+      `ref`  varchar(255) DEFAULT NULL,
+      UNIQUE KEY `i_unique` (`dmid`,`dkey`,`ref`)
+    );
+        };
+    }
 }
 
 1;
