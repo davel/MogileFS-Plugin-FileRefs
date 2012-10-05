@@ -120,41 +120,51 @@ sub update_schema {
 
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
 =head1 NAME
 
-MogileFS::Plugin::FileRefs - Perl extension for blah blah blah
-
-=head1 SYNOPSIS
-
-  use MogileFS::Plugin::FileRefs;
-  blah blah blah
+MogileFS::Plugin::FileRefs - MogileFS extension
 
 =head1 DESCRIPTION
 
-Stub documentation for MogileFS::Plugin::FileRefs, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
-
-Blah blah blah.
-
-=head2 EXPORT
-
-None by default.
+This module provides MogileFS with additional functionality to keep track of
+multiple uses of an individual dkey.  This may be useful for implementing
+de-duplication in your application.
 
 
+=head2 Mogile commands
+
+=over
+
+=item add_file_ref
+
+Takes domain id, dkey, and your reference as arguments.
+
+Creates an association from a key to your reference.
+
+=item del_file_ref
+
+Takes domain id, dkey, and your reference as arguments.
+
+Deletes an association from a key to your reference.
+
+=item rename_if_no_refs
+
+Takes domain id, old dkey and new dkey.
+
+Atomically renames a dkey provided there are no references to it.
+
+=item list_refs_for_dkey
+
+Takes domain id, dkey.
+
+Lists all the references against a dkey.
+
+=back
 
 =head1 SEE ALSO
 
-Mention other useful documentation such as the documentation of
-related modules or operating system documentation (such as man pages
-in UNIX), or any relevant external documentation such as RFCs or
-standards.
-
-If you have a mailing list set up for your module, mention it here.
-
-If you have a web site set up for your module, mention it here.
+L<MogileFS::Server>
 
 =head1 AUTHOR
 
