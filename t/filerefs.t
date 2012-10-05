@@ -43,5 +43,11 @@ is($sent_to_parent, "OK made_new_ref=1");
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, 1, "zz", "00001"), "1");
 is($sent_to_parent, "OK made_new_ref=1");
 
+is(MogileFS::Plugin::FileRefs::del_file_ref($query, 1, "zz", "00001"), "1");
+is($sent_to_parent, "OK deleted_ref=1");
+
+is(MogileFS::Plugin::FileRefs::del_file_ref($query, 1, "zz", "00001"), "1");
+is($sent_to_parent, "OK deleted_ref=0");
+
 done_testing();
 

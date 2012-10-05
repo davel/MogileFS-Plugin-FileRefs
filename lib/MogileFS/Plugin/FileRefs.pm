@@ -29,11 +29,12 @@ sub del_file_ref {
     my ($query, $dmid, $dkey, $ref) = @_;
     my $dbh = Mgd::get_dbh();
     local $@;
-    my $deleted = eval { $dbh->do("DELETE file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $dkey, $ref) };
+    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $dkey, $ref) };
     if ($@ || $dbh->err) {
+        warn $@;
         return $query->err_line("del_file_ref_fail");
     }
-    return $query->ok_line({deleted_ref => $deleted });
+    return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
 }
 
 sub rename_if_no_refs {
