@@ -1,6 +1,2 @@
-Revision history for Perl extension MogileFS::Plugin::FileRefs.
-
-0.01  Thu Oct  4 11:47:43 2012
-	- original version; created by h2xs 1.23 with options
-		-X MogileFS::Plugin::FileRefs
-
+0.01
+    - Initial release.
