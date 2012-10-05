@@ -18,11 +18,11 @@ sub add_file_ref {
     my $dbh = Mgd::get_dbh();
     local $@;
     my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $dkey, $ref); };
-    if ($@ || $dbh->err) {
+    if ($@ || $dbh->err || $updated < 1) {
         return $query->err_line("add_file_ref_fail");
     }
 
-    return $query->ok_line({made_new_ref => $updated});
+    return $query->ok_line({made_new_ref => $updated>1 ? 1:0});
 }
 
 sub del_file_ref {
