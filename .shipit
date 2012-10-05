@@ -1,4 +1,4 @@
-steps = JenkinsCheck, FindVersion, ChangeVersion, SyncDebianChangeLog, CheckChangeLog, Commit, MakeDeb, Tag, AddToSVNDir
+steps = FindVersion, ChangeVersion, SyncDebianChangeLog, CheckChangeLog, Commit, MakeDeb, Tag, AddToSVNDir
 
 git.tagpattern = %v
 git.push_to = origin
