@@ -68,6 +68,25 @@ sub rename_if_no_refs {
     return $query->ok_line({files_outstanding => 0, updated => $updated});
 }
 
+sub update_schema {
+    my $store = Mgd::get_store();
+    my $dbh = $store->dbh();
+    $dbh->do($store->filter_create_sql(TABLE_fileref()))
+        or die "Failed to create table file_ref: ". $dbh->errstr;
+
+    return;
+}
+
+sub TABLE_fileref {
+    q{CREATE TABLE `file_ref` (
+  `dmid` SMALLINT UNSIGNED NOT NULL,
+  `dkey` varchar(255) DEFAULT NULL,
+  `ref`  varchar(255) DEFAULT NULL,
+  UNIQUE KEY `i_unique` (`dmid`,`dkey`,`ref`)
+);
+    };
+}
+
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
