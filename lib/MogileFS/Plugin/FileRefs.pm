@@ -6,7 +6,7 @@ use warnings;
 use MogileFS::Store;
 
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 MogileFS::Store->add_extra_tables("file_ref");
 
 sub load {

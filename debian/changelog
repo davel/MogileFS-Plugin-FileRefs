@@ -1,3 +1,9 @@
+libmogilefs-plugin-filerefs-perl (0.03) lucid; urgency=low
+
+  * Fix up domain argument.
+
+ -- Dave Lambley <davel@square.state51.co.uk>  Mon, 08 Oct 2012 15:29:06 +0000
+
 libmogilefs-plugin-filerefs-perl (0.02) lucid; urgency=low
 
   * Fix argument passing.
