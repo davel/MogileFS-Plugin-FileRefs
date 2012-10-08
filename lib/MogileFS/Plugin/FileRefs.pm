@@ -26,10 +26,9 @@ sub add_file_ref {
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $args->{key}, $args->{'ref'}); };
     if ($@ || $dbh->err || $updated < 1) {
-        warn $@;
         return $query->err_line("add_file_ref_fail");
     }
-    return $query->ok_line({made_new_ref => $updated>1 ? 1:0});
+    return $query->ok_line({made_new_ref => $updated>0 ? 1:0});
 }
 
 sub del_file_ref {
@@ -43,6 +42,8 @@ sub del_file_ref {
     }
     return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
 }
+
+# TODO - use a stored procedure.
 
 sub rename_if_no_refs {
     my ($query, $args) = @_;
