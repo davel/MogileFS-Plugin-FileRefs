@@ -1,3 +1,11 @@
+libmogilefs-plugin-filerefs-perl (0.04) lucid; urgency=low
+
+  * Get made_new_ref return value correct.
+  * Munge arguments to work with Mogile::Client without poking around in
+    it's internals.
+
+ -- Dave Lambley <davel@state51.co.uk>  Mon, 15 Oct 2012 14:20:20 +0000
+
 libmogilefs-plugin-filerefs-perl (0.03) lucid; urgency=low
 
   * Fix up domain argument.
