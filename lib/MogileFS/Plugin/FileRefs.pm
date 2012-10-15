@@ -24,11 +24,11 @@ sub add_file_ref {
     my $dbh = Mgd::get_dbh();
     local $@;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $args->{arg1}, $args->{arg2}); };
+    my $updated = eval { $dbh->do("INSERT INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ref=ref", {}, $dmid, $args->{arg1}, $args->{arg2}); };
     if ($@ || $dbh->err || $updated < 1) {
         return $query->err_line("add_file_ref_fail");
     }
-    return $query->ok_line({made_new_ref => $updated>0 ? 1:0});
+    return $query->ok_line({made_new_ref => $updated>1 ? 0:1});
 }
 
 sub del_file_ref {
