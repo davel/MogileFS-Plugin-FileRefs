@@ -51,7 +51,7 @@ is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", arg1 => "z
 is($sent_to_parent, "ERR domain_not_found Domain+not+found");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
-is($sent_to_parent, "OK made_new_ref=0");
+is($sent_to_parent, "OK made_new_ref=1");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is($sent_to_parent, "OK made_new_ref=1");
