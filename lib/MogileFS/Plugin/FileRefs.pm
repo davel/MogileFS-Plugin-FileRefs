@@ -24,7 +24,7 @@ sub add_file_ref {
     my $dbh = Mgd::get_dbh();
     local $@;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $args->{key}, $args->{'ref'}); };
+    my $updated = eval { $dbh->do("REPLACE INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?)", {}, $dmid, $args->{arg1}, $args->{arg2}); };
     if ($@ || $dbh->err || $updated < 1) {
         return $query->err_line("add_file_ref_fail");
     }
@@ -36,7 +36,7 @@ sub del_file_ref {
     my $dbh = Mgd::get_dbh();
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     local $@;
-    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{key}, $args->{'ref'}) };
+    my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
     if ($@ || $dbh->err) {
         return $query->err_line("del_file_ref_fail");
     }
@@ -57,7 +57,7 @@ sub rename_if_no_refs {
         return $query->err_line("rename_if_no_refs_failed");
     }
 
-    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{from_key}) };
+    my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1}) };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
         return $query->err_line("rename_if_no_refs_failed");
@@ -68,7 +68,7 @@ sub rename_if_no_refs {
         return $query->ok_line({files_outstanding => $count});
     }
 
-    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{to_key}, $dmid, $args->{from_key}); };
+    my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{arg2}, $dmid, $args->{arg1}); };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
         return $query->err_line("rename_if_no_refs_failed");
@@ -83,7 +83,7 @@ sub list_refs_for_dkey {
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     my $dbh = Mgd::get_dbh();
     my $result = eval {
-        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{key});
+        $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1});
     };
     if ($@ || $dbh->err) {
         return $query->err_line("list_refs_for_dkey_failed");
