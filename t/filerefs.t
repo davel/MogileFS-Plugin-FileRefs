@@ -87,6 +87,25 @@ is($sent_to_parent, "OK files_outstanding=0&updated=1");
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
 is($sent_to_parent, "OK files_outstanding=0&updated=0");
 
+if (0) {
+    note "Testing locking behaviour";
+    my $fighting_dbh = DBI->connect($store->{dsn}, $store->{user}, $store->{pass}, {
+        PrintError => 1,
+        AutoCommit => 1,
+        RaiseError => 1,
+    });
+
+    isa_ok($fighting_dbh, 'DBD::dbh');
+
+    is($fighting_dbh->do("LOCK TABLES file_ref WRITE, file WRITE"), "0E0");
+
+    is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
+    is($sent_to_parent, "OK files_outstanding=0&updated=0");
+
+    is($fighting_dbh->do("UNLOCK TABLES"), "0E0");
+}
+
+
 note "Testing list_refs_for_key";
 
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");

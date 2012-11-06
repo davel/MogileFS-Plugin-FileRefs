@@ -6,7 +6,7 @@ use warnings;
 use MogileFS::Store;
 
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 MogileFS::Store->add_extra_tables("file_ref");
 
 sub load {
@@ -51,7 +51,9 @@ sub rename_if_no_refs {
 
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     local $@;
-    eval { $dbh->do("LOCK TABLES file_ref WRITE, file WRITE"); };
+    eval {
+        $dbh->do("LOCK TABLES file_ref LOW_PRIORITY WRITE, file LOW_PRIORITY WRITE");
+    };
     if ($@ || $dbh->err) {
         eval { $dbh->do("UNLOCK TABLES"); };
         return $query->err_line("rename_if_no_refs_failed");
