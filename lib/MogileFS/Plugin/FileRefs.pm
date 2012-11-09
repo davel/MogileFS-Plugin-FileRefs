@@ -4,7 +4,9 @@ use strict;
 use warnings;
 
 use MogileFS::Store;
+use MogileFS::Worker::Query;
 
+use constant LOCK_TIMEOUT => 5;
 
 our $VERSION = '0.05';
 MogileFS::Store->add_extra_tables("file_ref");
@@ -17,17 +19,73 @@ sub load {
     MogileFS::register_worker_command('rename_if_no_refs', \&rename_if_no_refs) or die;
 
     MogileFS::register_worker_command('list_refs_for_dkey', \&list_refs_for_dkey) or die;
+
+    _make_wrapper("cmd_create_open", \&_claim_lock, \&_free_lock);
+    _make_wrapper("cmd_create_close", \&_claim_lock, \&_free_lock);
+    _make_wrapper("cmd_rename", sub {
+        _claim_lock($_[0], { key => $_[1]->{to_key}});
+    },
+    sub {
+        _free_lock($_[0], { key => $_[1]->{to_key}});
+    });
+}
+
+# By virtue of DBI, this returns true if the connection worked.
+sub _claim_lock {
+    my ($rv) = Mgd::get_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{key}, LOCK_TIMEOUT());
+    return $rv;
+}
+
+sub _free_lock {
+    eval { Mgd::get_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{key}) or warn "could not free lock: $DBI::errstr"; };
+    return;
+}
+
+sub _make_wrapper {
+    my ($function, $before, $after) = @_;
+
+    no strict 'refs';
+    my $real = \&{"MogileFS::Worker::Query::$function"};
+
+    warn "We have $real for $function";
+
+    die "could not find $function" unless ref($real) eq 'CODE';
+
+    no warnings;
+    *{"MogileFS::Worker::Query::$function"} = sub {
+        my @args = @_;
+        if ($before->(@args)) {
+            return $args[0]->errline("get_key_lock_fail");
+        }
+        local $@;
+
+        # XXX ignores array return values
+        my $rv = eval {
+            $real->(@args);
+        };
+        my $err = $@;
+        $after->(@args);
+        die $err if $@;
+        return $rv;
+    };
+    use strict;
+    use warnings;
+
+    return;
 }
 
 sub add_file_ref {
     my ($query, $args) = @_;
-    my $dbh = Mgd::get_dbh();
-    local $@;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $dbh = Mgd::get_dbh();
+    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
+    local $@;
     my $updated = eval { $dbh->do("INSERT INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ref=ref", {}, $dmid, $args->{arg1}, $args->{arg2}); };
     if ($@ || $dbh->err || $updated < 1) {
+        _free_lock($query, {key => $args->{arg1}});
         return $query->err_line("add_file_ref_fail");
     }
+    _free_lock($query, {key => $args->{arg1}});
     return $query->ok_line({made_new_ref => $updated>1 ? 0:1});
 }
 
@@ -35,11 +93,14 @@ sub del_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
     local $@;
     my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
     if ($@ || $dbh->err) {
+        _free_lock($query, {key => $args->{arg1}});
         return $query->err_line("del_file_ref_fail");
     }
+    _free_lock($query, {key => $args->{arg1}});
     return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
 }
 
@@ -50,32 +111,28 @@ sub rename_if_no_refs {
     my $dbh = Mgd::get_dbh();
 
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    local $@;
-    eval {
-        $dbh->do("LOCK TABLES file_ref LOW_PRIORITY WRITE, file LOW_PRIORITY WRITE");
-    };
-    if ($@ || $dbh->err) {
-        eval { $dbh->do("UNLOCK TABLES"); };
-        return $query->err_line("rename_if_no_refs_failed");
-    }
+
+    warn "trying to get lock";
+    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
+    warn "got lock";
 
     my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1}) };
     if ($@ || $dbh->err) {
-        eval { $dbh->do("UNLOCK TABLES"); };
+        _free_lock($query, {key => $args->{arg1}});
         return $query->err_line("rename_if_no_refs_failed");
     }
 
     if ($count != 0) {
-        eval { $dbh->do("UNLOCK TABLES"); };
+        _free_lock($query, {key => $args->{arg1}});
         return $query->ok_line({files_outstanding => $count});
     }
 
     my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{arg2}, $dmid, $args->{arg1}); };
     if ($@ || $dbh->err) {
-        eval { $dbh->do("UNLOCK TABLES"); };
+        _free_lock($query, {key => $args->{arg1}});
         return $query->err_line("rename_if_no_refs_failed");
     }
-    eval { $dbh->do("UNLOCK TABLES"); };
+    _free_lock($query, {key => $args->{arg1}});
 
     return $query->ok_line({files_outstanding => 0, updated => $updated+0});
 }
