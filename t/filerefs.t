@@ -98,6 +98,9 @@ isa_ok($fighting_dbh, 'DBI::db');
 
 is($fighting_dbh->do("SELECT GET_LOCK('mogile-filerefs-eee-zz', 20)"), 1);
 
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "0");
+is($sent_to_parent, "ERR get_key_lock_fail get_key_lock_fail");
+
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "0");
 is($sent_to_parent, "ERR get_key_lock_fail get_key_lock_fail");
 
