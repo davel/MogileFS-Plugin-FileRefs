@@ -23,12 +23,12 @@ sub load {
 
 # By virtue of DBI, this returns true if the connection worked.
 sub _claim_lock {
-    my ($rv) = Mgd::get_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{key}, LOCK_TIMEOUT());
+    my ($rv) = Mgd::get_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}, LOCK_TIMEOUT());
     return $rv;
 }
 
 sub _free_lock {
-    eval { Mgd::get_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{key}) or warn "could not free lock: $DBI::errstr"; };
+    eval { Mgd::get_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}) or warn "could not free lock: $DBI::errstr"; };
     return;
 }
 
@@ -36,14 +36,14 @@ sub add_file_ref {
     my ($query, $args) = @_;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     my $dbh = Mgd::get_dbh();
-    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
+    _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
     local $@;
     my $updated = eval { $dbh->do("INSERT INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ref=ref", {}, $dmid, $args->{arg1}, $args->{arg2}); };
     if ($@ || $dbh->err || $updated < 1) {
-        _free_lock($query, {key => $args->{arg1}});
+        _free_lock($query, $args);
         return $query->err_line("add_file_ref_fail");
     }
-    _free_lock($query, {key => $args->{arg1}});
+    _free_lock($query, $args);
     return $query->ok_line({made_new_ref => $updated>1 ? 0:1});
 }
 
@@ -51,14 +51,14 @@ sub del_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
+    _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
     local $@;
     my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
     if ($@ || $dbh->err) {
-        _free_lock($query, {key => $args->{arg1}});
+        _free_lock($query, $args);
         return $query->err_line("del_file_ref_fail");
     }
-    _free_lock($query, {key => $args->{arg1}});
+    _free_lock($query, $args);
     return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
 }
 
@@ -70,27 +70,25 @@ sub rename_if_no_refs {
 
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
 
-    warn "trying to get lock";
-    _claim_lock($query, {key => $args->{arg1}}) or return $query->err_line("get_key_lock_fail");
-    warn "got lock";
+    _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
 
     my ($count) = eval { $dbh->selectrow_array("SELECT COUNT(*) FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1}) };
     if ($@ || $dbh->err) {
-        _free_lock($query, {key => $args->{arg1}});
+        _free_lock($query, $args);
         return $query->err_line("rename_if_no_refs_failed");
     }
 
     if ($count != 0) {
-        _free_lock($query, {key => $args->{arg1}});
+        _free_lock($query, $args);
         return $query->ok_line({files_outstanding => $count});
     }
 
     my $updated = eval { $dbh->do("UPDATE file SET dkey = ? WHERE dmid = ? AND dkey = ?", {}, $args->{arg2}, $dmid, $args->{arg1}); };
     if ($@ || $dbh->err) {
-        _free_lock($query, {key => $args->{arg1}});
+        _free_lock($query, $args);
         return $query->err_line("rename_if_no_refs_failed");
     }
-    _free_lock($query, {key => $args->{arg1}});
+    _free_lock($query, $args);
 
     return $query->ok_line({files_outstanding => 0, updated => $updated+0});
 }

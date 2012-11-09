@@ -96,12 +96,12 @@ my $fighting_dbh = DBI->connect($store->{dsn}, $store->{user}, $store->{pass}, {
 
 isa_ok($fighting_dbh, 'DBI::db');
 
-is($fighting_dbh->do("SELECT GET_LOCK('mogile-filerefs-zz', 20)"), 1);
+is($fighting_dbh->do("SELECT GET_LOCK('mogile-filerefs-eee-zz', 20)"), 1);
 
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "0");
 is($sent_to_parent, "ERR get_key_lock_fail get_key_lock_fail");
 
-is($fighting_dbh->do("SELECT RELEASE_LOCK('mogile-filerefs-zz')"), 1);
+is($fighting_dbh->do("SELECT RELEASE_LOCK('mogile-filerefs-eee-zz')"), 1);
 $fighting_dbh = undef;
 
 note "Testing list_refs_for_key";
