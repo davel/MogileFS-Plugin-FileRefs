@@ -51,14 +51,11 @@ sub del_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::get_dbh();
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
     local $@;
     my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
     if ($@ || $dbh->err) {
-        _free_lock($query, $args);
         return $query->err_line("del_file_ref_fail");
     }
-    _free_lock($query, $args);
     return $query->ok_line({deleted_ref => $deleted>0 ? 1:0 });
 }
 
