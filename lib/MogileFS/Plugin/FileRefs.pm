@@ -175,6 +175,18 @@ Lists all the references against a dkey.
 
 =back
 
+=head2 Locking behaviour
+
+Care has been taken to ensure that it is possible to remove a file, without
+the danger of a reference being added to it during the deletion process.
+L<add_file_ref> take a lock, keyed to the domain and key of the reference
+added.  C<rename_if_no_refs> also takes a lock which it holds between checking
+the reference count and actually doing the renaming, ensuring a reference
+cannot sneak in.
+
+If a lock cannot be obtained within the timeout period, a C<get_key_lock_fail>
+error is returned.
+
 =head1 SEE ALSO
 
 L<MogileFS::Server>
