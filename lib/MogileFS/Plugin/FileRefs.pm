@@ -19,15 +19,6 @@ sub load {
     MogileFS::register_worker_command('rename_if_no_refs', \&rename_if_no_refs) or die;
 
     MogileFS::register_worker_command('list_refs_for_dkey', \&list_refs_for_dkey) or die;
-
-    _make_wrapper("cmd_create_open", \&_claim_lock, \&_free_lock);
-    _make_wrapper("cmd_create_close", \&_claim_lock, \&_free_lock);
-    _make_wrapper("cmd_rename", sub {
-        _claim_lock($_[0], { key => $_[1]->{to_key}});
-    },
-    sub {
-        _free_lock($_[0], { key => $_[1]->{to_key}});
-    });
 }
 
 # By virtue of DBI, this returns true if the connection worked.
@@ -38,39 +29,6 @@ sub _claim_lock {
 
 sub _free_lock {
     eval { Mgd::get_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{key}) or warn "could not free lock: $DBI::errstr"; };
-    return;
-}
-
-sub _make_wrapper {
-    my ($function, $before, $after) = @_;
-
-    no strict 'refs';
-    my $real = \&{"MogileFS::Worker::Query::$function"};
-
-    warn "We have $real for $function";
-
-    die "could not find $function" unless ref($real) eq 'CODE';
-
-    no warnings;
-    *{"MogileFS::Worker::Query::$function"} = sub {
-        my @args = @_;
-        if ($before->(@args)) {
-            return $args[0]->errline("get_key_lock_fail");
-        }
-        local $@;
-
-        # XXX ignores array return values
-        my $rv = eval {
-            $real->(@args);
-        };
-        my $err = $@;
-        $after->(@args);
-        die $err if $@;
-        return $rv;
-    };
-    use strict;
-    use warnings;
-
     return;
 }
 
