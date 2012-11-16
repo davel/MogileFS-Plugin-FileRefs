@@ -1,8 +1,14 @@
+libmogilefs-plugin-filerefs-perl (0.06) lucid; urgency=low
+
+  * Avoid using a full table lock, stick to application locks instead.
+
+ -- Dave Lambley <davel@square.state51.co.uk>  Fri, 16 Nov 2012 15:42:27 +0000
+
 libmogilefs-plugin-filerefs-perl (0.05) lucid; urgency=low
 
   * Make locks low priority, but we still block on them.
 
- -- Dave Lambley <davel@state51.co.uk>  Tue, 06 Nov 2012 13:22:34 +0000
+ -- Dave Lambley <davel@state51.co.uk>  Fri, 16 Nov 2012 15:42:19 +0000
 
 libmogilefs-plugin-filerefs-perl (0.04) lucid; urgency=low
 

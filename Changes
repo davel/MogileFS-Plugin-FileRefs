@@ -1,3 +1,4 @@
+0.06
     - Avoid using a full table lock, stick to application locks instead.
 
 0.05
