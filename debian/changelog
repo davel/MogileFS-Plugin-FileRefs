@@ -1,3 +1,9 @@
+libmogilefs-plugin-filerefs-perl (0.07) lucid; urgency=low
+
+  * Add resources to distribution metadata.
+
+ -- Dave Lambley <davel@state51.co.uk>  Fri, 08 Feb 2013 12:52:27 +0000
+
 libmogilefs-plugin-filerefs-perl (0.06) lucid; urgency=low
 
   * Avoid using a full table lock, stick to application locks instead.

@@ -1,3 +1,6 @@
+0.07
+    - Add resources to distribution metadata.
+
 0.06
     - Avoid using a full table lock, stick to application locks instead.
 
