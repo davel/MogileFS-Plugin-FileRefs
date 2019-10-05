@@ -74,7 +74,7 @@ note "Testing rename";
 
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 0 });
+is_deeply(x($sent_to_parent), { files_outstanding => 0, updated => 0 });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
@@ -87,11 +87,11 @@ is($sent_to_parent, "OK files_outstanding=1");
 is(MogileFS::Plugin::FileRefs::del_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 1 });
+is_deeply(x($sent_to_parent), { files_outstanding => 0, updated => 1 });
 
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 0 });
+is_deeply(x($sent_to_parent), { files_outstanding => 0, updated => 0 });
 
 note "Testing locking behaviour";
 my $fighting_dbh = DBI->connect($store->{dsn}, $store->{user}, $store->{pass}, {
@@ -121,27 +121,27 @@ is($sent_to_parent, "OK total=0");
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { total => 1, ref_0 => '00001' });
+is_deeply(x($sent_to_parent), { total => 1, ref_0 => '00001' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { total => 1, ref_0 => '00001' });
+is_deeply(x($sent_to_parent), { total => 1, ref_0 => '00001' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00002"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
+is_deeply(x($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "yy", arg2 => "00003"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
 like($sent_to_parent, $resp);
-is_deeply(s($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
+is_deeply(x($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
 
 
 done_testing();
 
-sub s {
+sub x {
     my $s = shift;
     if ($s =~ qr/^OK (.*)$/) {
         my $z = $1;
