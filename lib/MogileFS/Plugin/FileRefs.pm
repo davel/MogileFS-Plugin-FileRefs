@@ -34,7 +34,7 @@ sub _free_lock {
 
 sub add_file_ref {
     my ($query, $args) = @_;
-    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $dmid = $query->check_domain($args) or return;
     my $dbh = Mgd::validate_dbh();
     _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
     local $@;
@@ -50,7 +50,7 @@ sub add_file_ref {
 sub del_file_ref {
     my ($query, $args) = @_;
     my $dbh = Mgd::validate_dbh();
-    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $dmid = $query->check_domain($args) or return;
     local $@;
     my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
     if ($@ || $dbh->err) {
@@ -65,7 +65,7 @@ sub rename_if_no_refs {
     my ($query, $args) = @_;
     my $dbh = Mgd::validate_dbh();
 
-    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $dmid = $query->check_domain($args) or return;
 
     _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
 
@@ -92,7 +92,7 @@ sub rename_if_no_refs {
 
 sub list_refs_for_dkey {
     my ($query, $args) = @_;
-    my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
+    my $dmid = $query->check_domain($args) or return;
     my $dbh = Mgd::validate_dbh();
     my $result = eval {
         $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1});
