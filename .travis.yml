@@ -7,6 +7,7 @@ sudo: false
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
 install:
-  - cpanm --quiet --installdeps --notest .
+  - sudo apt update
   - sudo apt install mysql-server
+  - cpanm --quiet --installdeps --notest .
   - cpanm --quiet DBD::mysql
