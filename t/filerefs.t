@@ -146,7 +146,7 @@ sub x {
     if ($s =~ qr/^OK (.*)$/) {
         my $z = $1;
         return {
-            map { split(qr/=/ } split(qr/\&/, $z))
+            map { split(qr/=/, $_) } split(qr/\&/, $z)
         }
     }
     else {
