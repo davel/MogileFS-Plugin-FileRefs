@@ -50,7 +50,7 @@ is($store->create_domain("eee"), 1);
 
 my $resp = qr/^OK /;
 
-is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", arg1 => "zz", arg2 => "00001"}), "0");
+is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", arg1 => "zz", arg2 => "00001"}), undef);
 is($sent_to_parent, undef);
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
