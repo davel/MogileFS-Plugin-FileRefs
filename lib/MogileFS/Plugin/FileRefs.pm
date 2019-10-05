@@ -23,19 +23,19 @@ sub load {
 
 # By virtue of DBI, this returns true if the connection worked.
 sub _claim_lock {
-    my ($rv) = Mgd::get_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}, LOCK_TIMEOUT());
+    my ($rv) = Mgd::validate_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}, LOCK_TIMEOUT());
     return $rv;
 }
 
 sub _free_lock {
-    eval { Mgd::get_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}) or warn "could not free lock: $DBI::errstr"; };
+    eval { Mgd::validate_dbh->do("SELECT RELEASE_LOCK(?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}) or warn "could not free lock: $DBI::errstr"; };
     return;
 }
 
 sub add_file_ref {
     my ($query, $args) = @_;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    my $dbh = Mgd::get_dbh();
+    my $dbh = Mgd::validate_dbh();
     _claim_lock($query, $args) or return $query->err_line("get_key_lock_fail");
     local $@;
     my $updated = eval { $dbh->do("INSERT INTO file_ref (dmid, dkey, ref) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE ref=ref", {}, $dmid, $args->{arg1}, $args->{arg2}); };
@@ -49,7 +49,7 @@ sub add_file_ref {
 
 sub del_file_ref {
     my ($query, $args) = @_;
-    my $dbh = Mgd::get_dbh();
+    my $dbh = Mgd::validate_dbh();
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
     local $@;
     my $deleted = eval { $dbh->do("DELETE FROM file_ref WHERE dmid = ? AND dkey = ? AND ref = ?", {}, $dmid, $args->{arg1}, $args->{arg2}) };
@@ -63,7 +63,7 @@ sub del_file_ref {
 
 sub rename_if_no_refs {
     my ($query, $args) = @_;
-    my $dbh = Mgd::get_dbh();
+    my $dbh = Mgd::validate_dbh();
 
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
 
@@ -93,7 +93,7 @@ sub rename_if_no_refs {
 sub list_refs_for_dkey {
     my ($query, $args) = @_;
     my $dmid = $query->check_domain($args) or return $query->err_line('domain_not_found');
-    my $dbh = Mgd::get_dbh();
+    my $dbh = Mgd::validate_dbh();
     my $result = eval {
         $dbh->selectcol_arrayref("SELECT ref FROM file_ref WHERE dmid = ? AND dkey = ?", {}, $dmid, $args->{arg1});
     };
