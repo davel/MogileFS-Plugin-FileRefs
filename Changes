@@ -1,3 +1,5 @@
+    - Switch to Dist::Zilla.
+
 0.07
     - Add resources to distribution metadata.
 
