@@ -24,7 +24,7 @@ sub load {
 # By virtue of DBI, this returns true if the connection worked.
 sub _claim_lock {
     my ($rv) = Mgd::validate_dbh->selectrow_array("SELECT GET_LOCK(?,?)", {}, "mogile-filerefs-".$_[1]->{domain}."-".$_[1]->{arg1}, LOCK_TIMEOUT());
-    return $rv;
+    return $rv==1;
 }
 
 sub _free_lock {
