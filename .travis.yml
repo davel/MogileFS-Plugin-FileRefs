@@ -7,7 +7,9 @@ sudo: false
 before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
 install:
-  - sudo apt update
-  - sudo apt install mysql-server
   - cpanm --quiet --installdeps --notest .
   - cpanm --quiet DBD::mysql
+services:
+  - mysql
+env:
+  - MOGTEST_DBHOST=127.0.0.1 MOGTEST_DBUSER=root MOGTEST_DBPASS= MOGTEST_DBNAME=mysql
