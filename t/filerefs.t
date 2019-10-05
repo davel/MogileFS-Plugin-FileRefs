@@ -48,7 +48,7 @@ is($store->create_domain("eee"), 1);
 
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", arg1 => "zz", arg2 => "00001"}), "0");
-is($sent_to_parent, "Domain+name+invalid/not+found);
+is($sent_to_parent, "Domain+name+invalid/not+found");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is($sent_to_parent, "OK made_new_ref=1");
