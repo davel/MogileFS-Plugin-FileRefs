@@ -8,7 +8,7 @@ before_install:
   - eval $(curl https://travis-perl.github.io/init) --auto
 install:
   - cpanm --quiet --installdeps --notest .
-  - cpanm --quiet DBD::mysql
+  - cpanm --quiet --notest DBD::mysql
 services:
   - mysql
 env:
