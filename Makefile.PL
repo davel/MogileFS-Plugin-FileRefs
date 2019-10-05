@@ -8,7 +8,7 @@ WriteMakefile(
     PREREQ_PM         => {
         "MogileFS::Server" => 0,
         "Test::More" => 0,
-        "Text::Exception" => 0,
+        "Test::Exception" => 0,
     }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ? (    ## Add these new keywords supported since 5.005
         ABSTRACT_FROM  => 'lib/MogileFS/Plugin/FileRefs.pm', # retrieve abstract from module
