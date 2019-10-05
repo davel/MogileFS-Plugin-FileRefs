@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+# vim:ts=4:shiftwidth=4:expandtab
+
 use Test::More;
 use MogileFS::Server;
 use MogileFS::Test;
@@ -46,6 +48,7 @@ ok($domfac, "got a domain factory");
 
 is($store->create_domain("eee"), 1);
 
+my $resp = qr/^OK /;
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "zzz", arg1 => "zz", arg2 => "00001"}), "0");
 is($sent_to_parent, "Domain+name+invalid/not+found");
@@ -54,10 +57,10 @@ is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "z
 is($sent_to_parent, "OK made_new_ref=1");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
-is($sent_to_parent, "OK made_new_ref=0");
+is($sent_to_parent, "OK made_new_ref=1", "Update counts as successful creation.");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
-is($sent_to_parent, "OK made_new_ref=0");
+is($sent_to_parent, "OK made_new_ref=1", "Update counts as successful creation.");
 
 note "Testing del refs";
 
@@ -70,7 +73,8 @@ is($sent_to_parent, "OK deleted_ref=0");
 note "Testing rename";
 
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
-is($sent_to_parent, "OK files_outstanding=0&updated=0");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 0 });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
@@ -82,10 +86,12 @@ is($sent_to_parent, "OK files_outstanding=1");
 
 is(MogileFS::Plugin::FileRefs::del_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
-is($sent_to_parent, "OK files_outstanding=0&updated=1");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 1 });
 
 is(MogileFS::Plugin::FileRefs::rename_if_no_refs($query, {domain => "eee", arg1 => "zz", arg2 => "yy"}), "1");
-is($sent_to_parent, "OK files_outstanding=0&updated=0");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { files_outstanding => 0, updated => 0 });
 
 note "Testing locking behaviour";
 my $fighting_dbh = DBI->connect($store->{dsn}, $store->{user}, $store->{pass}, {
@@ -114,20 +120,37 @@ is($sent_to_parent, "OK total=0");
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
-is($sent_to_parent, "OK total=1&ref_0=00001");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { total => 1, ref_0 => '00001' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00001"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
-is($sent_to_parent, "OK total=1&ref_0=00001");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { total => 1, ref_0 => '00001' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "zz", arg2 => "00002"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
-is($sent_to_parent, "OK ref_1=00002&total=2&ref_0=00001");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
 
 is(MogileFS::Plugin::FileRefs::add_file_ref($query, {domain => "eee", arg1 => "yy", arg2 => "00003"}), "1");
 is(MogileFS::Plugin::FileRefs::list_refs_for_dkey($query, {domain => "eee", arg1 => "zz"}), "1");
-is($sent_to_parent, "OK ref_1=00002&total=2&ref_0=00001");
+like($sent_to_parent, $resp);
+is_deeply(s($sent_to_parent), { total => 2, ref_0 => '00001', ref_2 => '00002' });
 
 
 done_testing();
 
+sub s {
+    my $s = shift;
+    if ($s =~ qr/^OK (.*)$/) {
+        my $z = $1;
+        return {
+            split(split($z, qr/\&/), qr/=/);
+        }
+    }
+    else {
+        warn "couldn't decode response: $s";
+        return {};
+    }
+}
