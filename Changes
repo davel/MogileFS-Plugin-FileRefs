@@ -1,3 +1,4 @@
+0.08
     - Update to build against modern MogileFS::Server.
     - Switch to Dist::Zilla.
 
