@@ -117,18 +117,16 @@ sub update_schema {
     return;
 }
 
-{
-    package MogileFS::Store;
-
-    sub TABLE_file_ref {
+BEGIN {
+    *MogileFS::Store::TABLE_file_ref = sub {
         q{CREATE TABLE `file_ref` (
       `dmid` SMALLINT UNSIGNED NOT NULL,
       `dkey` varchar(255) DEFAULT NULL,
       `ref`  varchar(255) DEFAULT NULL,
       UNIQUE KEY `i_unique` (`dmid`,`dkey`,`ref`)
     );
-        };
-    }
+    };
+    };
 }
 
 1;
