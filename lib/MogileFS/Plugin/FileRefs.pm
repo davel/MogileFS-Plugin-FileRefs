@@ -8,7 +8,7 @@ use MogileFS::Worker::Query;
 
 use constant LOCK_TIMEOUT => 5;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 MogileFS::Store->add_extra_tables("file_ref");
 
 sub load {
