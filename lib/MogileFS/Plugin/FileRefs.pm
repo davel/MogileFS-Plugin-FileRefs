@@ -191,7 +191,7 @@ L<MogileFS::Server>
 
 =head1 AUTHOR
 
-Dave Lambley, E<lt>davel@cpan.orgE<gt>
+Dave Lambley, E<lt>dlambley@cpan.orgE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
